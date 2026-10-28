@@ -560,6 +560,12 @@ vol-b에서 읽을 수 있었다.
 
 정리하면 이미지는 빌드 산출물이자 템플릿이고, 컨테이너는 그 템플릿으로 띄운 실행 인스턴스다.
 
+그래서 재빌드가 필요한 경우는 이미지 안의 내용을 바꿔야 할 때다.
+`site/`의 정적 파일을 고쳐서 배포본에 반영하거나, `nginx/default.conf`의 설정을 바꾸거나,
+베이스 이미지에 보안 패치가 올라와 `nginx:alpine`을 다시 받아야 하는 경우가 그렇다.
+반대로 실행 중인 동작만 바꾸는 것(포트를 다르게 띄우거나 마운트를 붙이는 것)은
+`docker run` 옵션으로 해결되므로 재빌드가 필요 없다.
+
 ## 9. 포트 매핑
 
 처음에는 `-p 8080:80`으로 띄웠다가 접속에 실패했다. [트러블슈팅 3](#3-컨테이너는-up인데-접속이-끊김)에 정리했다.
@@ -631,6 +637,9 @@ $ curl -s --max-time 5 http://localhost:8081 | tail -5
 `-p 호스트포트:컨테이너포트`가 이 둘을 연결한다.
 기본 네트워크 모드인 bridge가 이렇게 별도 네임스페이스를 쓰기 때문에 매핑이 필요하고,
 host 모드로 띄우면 호스트의 네트워크를 그대로 쓰므로 `-p` 없이 닿는 대신 포트가 겹칠 수 있다.
+접속이 안 될 때는 `docker port <컨테이너>`로 매핑을 보고,
+`docker exec <컨테이너> nginx -T | grep listen`으로 애플리케이션이 실제로 듣는 포트를 확인하면
+어느 쪽이 어긋났는지 가려낼 수 있다. 아래 트러블슈팅 3이 그 사례다.
 
 위 실행이 근거가 된다. 같은 이미지에 같은 컨테이너 포트 8080을 쓰는 컨테이너 두 개를
 호스트 포트만 8080과 8081로 달리해서 동시에 띄웠다.
@@ -776,6 +785,83 @@ $ docker volume inspect codyssey-data
 그 경로가 있는 PC에서만 동작한다. 볼륨은 Docker가 저장 위치를 관리하므로
 다른 환경으로 옮기기 쉽다.
 
+### 볼륨 백업과 복원
+
+볼륨은 컨테이너를 지워도 남지만, 볼륨 자체를 지우면 데이터도 같이 사라진다.
+그래서 중요한 데이터라면 따로 백업해 둘 필요가 있다.
+
+볼륨의 실제 저장 위치는 `/var/lib/docker/volumes/...`인데 Docker Desktop에서는 리눅스 VM 안이라
+호스트에서 직접 열기 어렵다. 그래서 임시 컨테이너에 볼륨과 호스트 디렉터리를 같이 붙이고
+그 안에서 tar로 묶어 꺼내는 방식을 썼다.
+
+백업.
+
+```
+$ docker run --rm -v codyssey-data:/data ubuntu:24.04 cat /data/hello.txt
+persisted at Sat Oct 24 01:46:58 UTC 2026
+
+$ docker run --rm -v codyssey-data:/data -v "$(pwd)":/backup ubuntu:24.04 \
+    tar czf /backup/codyssey-data.tar.gz -C /data .
+
+$ ls -lh codyssey-data.tar.gz
+-rw-r--r--  1 ych  staff   186B 10월 28 18:26 codyssey-data.tar.gz
+
+$ tar tzf codyssey-data.tar.gz
+./
+./hello.txt
+```
+
+`--rm`은 작업이 끝나면 컨테이너를 지우라는 뜻이다. 백업용 임시 컨테이너라 남길 이유가 없다.
+`-C /data .`는 `/data`로 이동한 뒤 그 안의 내용만 묶으라는 뜻인데,
+이렇게 하지 않으면 압축 파일 안에 `data/` 경로가 통째로 들어가서 복원 위치가 어긋난다.
+
+볼륨 삭제. 데이터가 사라지는 상황을 직접 만들어봤다.
+
+```
+$ docker rm -f vol-b
+vol-b
+
+$ docker volume rm codyssey-data
+codyssey-data
+
+$ docker volume ls --filter name=codyssey-data
+DRIVER    VOLUME NAME
+```
+
+볼륨을 쓰고 있는 컨테이너가 있으면 삭제되지 않아서 vol-b를 먼저 지웠다.
+
+```
+$ docker run --rm -v codyssey-data:/data ubuntu:24.04 ls -la /data
+total 8
+drwxr-xr-x 2 root root 4096 Oct 28 09:26 .
+drwxr-xr-x 1 root root 4096 Oct 28 09:26 ..
+```
+
+여기서 주의할 점이 하나 있다. 없는 볼륨 이름으로 `-v`를 걸어도 에러가 나지 않고
+빈 볼륨이 새로 만들어진다. 데이터가 사라진 것을 에러로 알려주지 않기 때문에
+위처럼 내용이 비어 있는 것으로 확인해야 한다.
+
+복원.
+
+```
+$ docker volume create codyssey-data
+codyssey-data
+
+$ docker run --rm -v codyssey-data:/data -v "$(pwd)":/backup ubuntu:24.04 \
+    tar xzf /backup/codyssey-data.tar.gz -C /data
+
+$ docker run --rm -v codyssey-data:/data ubuntu:24.04 cat /data/hello.txt
+persisted at Sat Oct 24 01:46:58 UTC 2026
+```
+
+삭제 전과 같은 타임스탬프가 나왔다. 백업본에서 복원된 것이다.
+
+백업 파일은 저장소가 아니라 작업용 디렉터리(`~/codyssey/practice`)에 만들었다.
+저장소 안에 두면 커밋에 바이너리가 섞이기 때문이다.
+
+바인드 마운트 쪽은 호스트 디렉터리를 그대로 쓰므로 평소 쓰던 방법으로 백업하면 되고,
+이런 별도 절차가 필요하지 않다.
+
 ## 12. Git과 GitHub
 
 ### Git 설정
@@ -855,6 +941,11 @@ e1264c8 (HEAD -> main, origin/main) 수행 로그와 증거 스크린샷 정리
 
 푸시 전에는 `(HEAD -> main)`만 있었는데 푸시 후에 `origin/main`이 붙었다.
 로컬 main과 원격 main이 같은 커밋을 가리킨다는 뜻이다.
+
+이 저장소는 과제 제출용이라 공개(Public)로 만들었다. 공개 저장소는 주소만 알면 누구나 볼 수 있으므로
+토큰이나 비밀번호, 개인키가 커밋에 섞이지 않도록 확인했다.
+위 `git config --list` 출력에서 credential helper 줄을 걸러낸 것도 같은 이유다.
+플랫폼 연동용으로 발급한 GitHub 토큰은 저장소와 문서, 스크린샷 어디에도 포함하지 않았다.
 
 ### Git과 GitHub의 차이
 
@@ -985,6 +1076,8 @@ web-a	0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
 web-a가 점유 중이었다.
 점유자가 컨테이너가 아니라 호스트에서 직접 뜬 프로세스일 수도 있는데,
 그럴 때는 `lsof -nP -iTCP:8080 -sTCP:LISTEN`으로 확인하면 된다.
+출력의 PID를 보고 `kill <PID>`로 종료할 수 있는데, 어떤 프로세스인지 확인하지 않고 끄면
+다른 작업을 중단시킬 수 있으므로 이번에는 호스트 포트를 바꾸는 쪽을 택했다.
 
 해결: 호스트 포트만 8081로 바꾸고 컨테이너 포트는 8080 그대로 두어 실행했다.
 실패한 컨테이너가 생성된 채로 남으므로 `docker rm web-b`를 먼저 해야 한다.
