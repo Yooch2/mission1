@@ -740,7 +740,83 @@ $ docker volume inspect codyssey-data
 
 ## 12. Git과 GitHub
 
-(Phase 9~10 수행 후 `git config --list` 출력과 VSCode 연동 스크린샷을 여기에 추가)
+### Git 설정
+
+```
+$ git config --global init.defaultBranch main
+$ git init
+Initialized empty Git repository in /Users/ych/codyssey/mission1/.git/
+
+$ git config --list --show-origin | grep -v credential
+file:/Library/Developer/CommandLineTools/usr/share/git-core/gitconfig    init.defaultbranch=main
+file:/Users/ych/.gitconfig    user.name=Yooch2
+file:/Users/ych/.gitconfig    user.email=ckdgml9935@o.cnu.ac.kr
+file:/Users/ych/.gitconfig    url.https://github.com/.insteadof=git@github.com:
+file:/Users/ych/.gitconfig    init.defaultbranch=main
+file:.git/config    core.repositoryformatversion=0
+file:.git/config    core.filemode=true
+file:.git/config    core.bare=false
+file:.git/config    core.logallrefupdates=true
+file:.git/config    core.ignorecase=true
+file:.git/config    core.precomposeunicode=true
+```
+
+`git config --list`를 그냥 쓰면 credential helper 경로까지 나오는데
+인증 관련 설정이라 `grep -v credential`로 걸러서 기록했다.
+
+### 커밋
+
+한 번에 전부 올리지 않고 작업 단위로 나눠서 커밋했다.
+
+```
+$ git add .gitignore
+$ git commit -m "저장소 초기화"
+[main (root-commit) 4e54cf1] 저장소 초기화
+ 1 file changed, 1 insertion(+)
+
+$ git add site/
+$ git commit -m "정적 페이지 추가"
+[main 2d82c55] 정적 페이지 추가
+ 2 files changed, 15 insertions(+)
+
+$ git add nginx/ Dockerfile
+$ git commit -m "nginx 설정 교체한 Dockerfile 작성"
+[main d3bfba6] nginx 설정 교체한 Dockerfile 작성
+ 2 files changed, 23 insertions(+)
+
+$ git add docs/ README.md
+$ git commit -m "수행 로그와 증거 스크린샷 정리"
+[main e1264c8] 수행 로그와 증거 스크린샷 정리
+ 5 files changed, 919 insertions(+)
+
+$ git log --oneline
+e1264c8 (HEAD -> main) 수행 로그와 증거 스크린샷 정리
+d3bfba6 nginx 설정 교체한 Dockerfile 작성
+2d82c55 정적 페이지 추가
+4e54cf1 저장소 초기화
+```
+
+### GitHub 연동
+
+VSCode 계정 메뉴에서 GitHub 로그인 상태를 확인했다.
+
+![VSCode GitHub 로그인](docs/img/vscode-github-login.png)
+
+소스 제어 패널에서 Publish to GitHub를 실행해 공개 저장소로 올렸다.
+
+![VSCode 소스 제어 패널](docs/img/vscode-source-control.png)
+
+```
+$ git remote -v
+origin	https://github.com/Yooch2/mission1.git (fetch)
+origin	https://github.com/Yooch2/mission1.git (push)
+
+$ git log --oneline --decorate -1
+e1264c8 (HEAD -> main, origin/main) 수행 로그와 증거 스크린샷 정리
+```
+
+푸시 전에는 `(HEAD -> main)`만 있었는데 푸시 후에 `origin/main`이 붙었다.
+로컬 main과 원격 main이 같은 커밋을 가리킨다는 뜻이다.
 
 ### Git과 GitHub의 차이
 
