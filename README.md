@@ -68,7 +68,6 @@ mission1/
 │   └── style.css
 ├── docs/img/             증거 스크린샷
 ├── docs/logs/            날짜·명령·종료 코드를 포함한 전체 텍스트 로그
-├── scripts/             로그 수집 스크립트
 └── README.md
 ```
 
@@ -596,8 +595,8 @@ vol-b에서 읽을 수 있었다.
 일반 빌드의 두 COPY는 CACHED, 캐시 없는 빌드의 두 COPY는 DONE으로 확인됐다.
 
 ```bash
-bash scripts/capture-log.sh build-cache docker build --progress=plain -t codyssey-web:cache-check .
-bash scripts/capture-log.sh build-no-cache docker build --no-cache --progress=plain -t codyssey-web:fresh-check .
+docker build --progress=plain -t codyssey-web:cache-check .
+docker build --no-cache --progress=plain -t codyssey-web:fresh-check .
 ```
 
 `--no-cache`는 빌드 캐시를 사용하지 않는 옵션이며 베이스 이미지 최신화와는 다르다.
@@ -842,7 +841,7 @@ $ docker volume inspect codyssey-data
 
 ```bash
 docker volume inspect codyssey-data &&
-  bash scripts/capture-log.sh volume-files docker run --rm \
+  docker run --rm \
     -v codyssey-data:/data:ro ubuntu:24.04 sh -c 'ls -la /data; cat /data/hello.txt'
 ```
 
@@ -1218,32 +1217,10 @@ curl -i --connect-timeout 3 --max-time 5 http://127.0.0.1:8080/healthz
 이 저장소의 브라우저·curl 증빙은 **같은 Mac의 localhost 접속**이다.
 다른 PC나 인터넷에서 접속되는지까지 확인한 결과는 아니다.
 
-### 전체 출력 보관
+### 실행 로그
 
-```bash
-bash scripts/capture-log.sh docker-info docker info
-bash scripts/capture-log.sh hello-world docker run --rm hello-world
-bash scripts/capture-log.sh web-logs docker logs --timestamps web-a
-```
-
-출력은 `docs/logs/`에 명령, 작업 위치, UTC 시작·종료 시각, stdout/stderr, 종료 코드와
-함께 저장된다. 같은 이름으로 반복해도 파일을 덮어쓰지 않는다. 실패한 명령은
-실패 종료 코드를 그대로 반환한다. 명령이 끝난 뒤 전체 출력과 파일 경로가 화면에 나온다.
-`hello-world` 이미지가 이미 있으면 풀링 로그가 나오지 않는 것이 정상이다.
-로그를 만들기 위해 기존 이미지를 일부러 지우지는 않는다.
-
-이미지·컨테이너 정리 전후를 남기려면 다음 읽기 전용 명령을 각각 기록하고,
-삭제는 자신이 만든 대상 이름을 확인한 뒤 그 사이에 직접 실행한다.
-
-```bash
-bash scripts/capture-log.sh containers-before docker ps -a
-bash scripts/capture-log.sh images-before docker images
-# 자신이 만든 실습용 대상만 docker rm / docker image rm으로 정리
-bash scripts/capture-log.sh containers-after docker ps -a
-bash scripts/capture-log.sh images-after docker images
-```
-
-성공 실행 로그와 기존 실습 자료의 위치는 [로그 목록](docs/logs/README.md)에 적었다.
+추가 검증의 전체 출력은 [로그 목록](docs/logs/README.md)에서 확인할 수 있다.
+각 파일에는 명령, 작업 위치, UTC 시작·종료 시각, stdout/stderr, 종료 코드가 들어 있다.
 
 확인이 끝나면 정리한다.
 
