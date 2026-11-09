@@ -591,7 +591,9 @@ vol-b에서 읽을 수 있었다.
 `docker run` 옵션으로 해결되므로 재빌드가 필요 없다.
 
 캐시 영향을 구분하려면 아래처럼 서로 다른 태그로 빌드하고 전체 출력을 남긴다.
-아래는 재실행용 명령이며, 이 문서에 성공 로그가 첨부된 실험은 아니다.
+2026-11-09에 별도 실습 태그로 실행한 [일반 빌드](docs/logs/build-cache_20261109T091320Z.log.hc0I51)와
+[캐시 없는 빌드](docs/logs/build-no-cache_20261109T091320Z.log.gr5vIZ) 전체 로그를 첨부했다.
+일반 빌드의 두 COPY는 CACHED, 캐시 없는 빌드의 두 COPY는 DONE으로 확인됐다.
 
 ```bash
 bash scripts/capture-log.sh build-cache docker build --progress=plain -t codyssey-web:cache-check .
@@ -844,7 +846,9 @@ docker volume inspect codyssey-data &&
     -v codyssey-data:/data:ro ubuntu:24.04 sh -c 'ls -la /data; cat /data/hello.txt'
 ```
 
-이는 VM 밖에서 볼륨 내부를 확인하는 방법이며, 아직 새 실행 로그를 첨부한 상태는 아니다.
+2026-11-09에는 기존 `codyssey-data` 대신 별도 실습 볼륨으로 검증했다.
+[전체 로그](docs/logs/volume-persistence_20261109T091320Z.log.AD4ol4)에서 Mountpoint와 내부 파일 목록,
+작성 컨테이너를 지운 뒤 새 컨테이너가 같은 타임스탬프를 읽은 결과를 확인할 수 있다.
 
 백업.
 
@@ -1239,7 +1243,7 @@ bash scripts/capture-log.sh containers-after docker ps -a
 bash scripts/capture-log.sh images-after docker images
 ```
 
-현재 보관된 파일과 미수집 항목은 [로그 목록](docs/logs/README.md)에 적었다.
+성공 실행 로그와 기존 실습 자료의 위치는 [로그 목록](docs/logs/README.md)에 적었다.
 
 확인이 끝나면 정리한다.
 

@@ -1,0 +1,36 @@
+started_at_utc: 2026-11-09T09:13:18Z
+working_directory: /Users/ych/Documents/Codex/2026-11-08/file-users-ych-desktop-e1-84/work/mission1
+command: bash -c set\ -ex\;\ docker\ pull\ \"\$1\"\;\ docker\ run\ --rm\ --name\ \"\$2-hello\"\ --label\ \"mission1.proof=\$2\"\ \"\$1\" _ hello-world@sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa mission1-proof-20261109t091318z-53830
+--- output (stdout + stderr) ---
++ docker pull hello-world@sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa
+docker.io/library/hello-world@sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa: Pulling from library/hello-world
+Digest: sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa
+Status: Image is up to date for hello-world@sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa
+docker.io/library/hello-world@sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa
++ docker run --rm --name mission1-proof-20261109t091318z-53830-hello --label mission1.proof=mission1-proof-20261109t091318z-53830 hello-world@sha256:11a3eb1597e864c51b3f56733cb2e8a90bf0c284bfc05f9444d81c558bc848aa
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (arm64v8)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
+
+
+--- end ---
+finished_at_utc: 2026-11-09T09:13:19Z
+exit_code: 0

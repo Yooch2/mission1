@@ -1,0 +1,34 @@
+started_at_utc: 2026-11-09T09:13:20Z
+working_directory: /Users/ych/Documents/Codex/2026-11-08/file-users-ych-desktop-e1-84/work/mission1
+command: bash -c set\ -ex\;\ docker\ volume\ create\ --label\ \"mission1.proof=\$1\"\ \"\$1-data\"\;\ docker\ run\ --name\ \"\$1-writer\"\ --label\ \"mission1.proof=\$1\"\ -v\ \"\$1-data:/data\"\ ubuntu:24.04\ sh\ -c\ \'date\ -u\ \>\ /data/proof.txt\;\ cat\ /data/proof.txt\'\;\ docker\ rm\ \"\$1-writer\"\;\ docker\ volume\ inspect\ \"\$1-data\"\;\ docker\ run\ --rm\ --name\ \"\$1-reader\"\ --label\ \"mission1.proof=\$1\"\ -v\ \"\$1-data:/data:ro\"\ ubuntu:24.04\ sh\ -c\ \'ls\ -la\ /data\;\ cat\ /data/proof.txt\' _ mission1-proof-20261109t091318z-53830
+--- output (stdout + stderr) ---
++ docker volume create --label mission1.proof=mission1-proof-20261109t091318z-53830 mission1-proof-20261109t091318z-53830-data
+mission1-proof-20261109t091318z-53830-data
++ docker run --name mission1-proof-20261109t091318z-53830-writer --label mission1.proof=mission1-proof-20261109t091318z-53830 -v mission1-proof-20261109t091318z-53830-data:/data ubuntu:24.04 sh -c 'date -u > /data/proof.txt; cat /data/proof.txt'
+Mon Nov  9 09:13:21 UTC 2026
++ docker rm mission1-proof-20261109t091318z-53830-writer
+mission1-proof-20261109t091318z-53830-writer
++ docker volume inspect mission1-proof-20261109t091318z-53830-data
+[
+    {
+        "CreatedAt": "2026-11-09T09:13:20Z",
+        "Driver": "local",
+        "Labels": {
+            "mission1.proof": "mission1-proof-20261109t091318z-53830"
+        },
+        "Mountpoint": "/var/lib/docker/volumes/mission1-proof-20261109t091318z-53830-data/_data",
+        "Name": "mission1-proof-20261109t091318z-53830-data",
+        "Options": null,
+        "Scope": "local"
+    }
+]
++ docker run --rm --name mission1-proof-20261109t091318z-53830-reader --label mission1.proof=mission1-proof-20261109t091318z-53830 -v mission1-proof-20261109t091318z-53830-data:/data:ro ubuntu:24.04 sh -c 'ls -la /data; cat /data/proof.txt'
+total 12
+drwxr-xr-x 2 root root 4096 Nov  9 09:13 .
+drwxr-xr-x 1 root root 4096 Nov  9 09:13 ..
+-rw-r--r-- 1 root root   29 Nov  9 09:13 proof.txt
+Mon Nov  9 09:13:21 UTC 2026
+
+--- end ---
+finished_at_utc: 2026-11-09T09:13:21Z
+exit_code: 0

@@ -1,0 +1,68 @@
+started_at_utc: 2026-11-09T09:13:20Z
+working_directory: /Users/ych/Documents/Codex/2026-11-08/file-users-ych-desktop-e1-84/work/mission1
+command: bash -c set\ -ex\;\ docker\ run\ -d\ --name\ \"\$1-web\"\ --label\ \"mission1.proof=\$1\"\ -p\ 127.0.0.1::8080\ \"\$1:fresh\"\;\ docker\ port\ \"\$1-web\"\;\ address=\$\(docker\ port\ \"\$1-web\"\ 8080/tcp\)\;\ curl\ -i\ --retry\ 5\ --retry-connrefused\ --retry-delay\ 1\ --connect-timeout\ 3\ --max-time\ 5\ \"http://\$address/healthz\"\;\ curl\ -fsS\ --connect-timeout\ 3\ --max-time\ 5\ \"http://\$address/\"\;\ docker\ logs\ --timestamps\ \"\$1-web\" _ mission1-proof-20261109t091318z-53830
+--- output (stdout + stderr) ---
++ docker run -d --name mission1-proof-20261109t091318z-53830-web --label mission1.proof=mission1-proof-20261109t091318z-53830 -p 127.0.0.1::8080 mission1-proof-20261109t091318z-53830:fresh
+e5fbf9326e4c1447c6c01d0f690ef029bf1123ea22050be59fdc44fdc951dcaa
++ docker port mission1-proof-20261109t091318z-53830-web
+8080/tcp -> 127.0.0.1:50223
+++ docker port mission1-proof-20261109t091318z-53830-web 8080/tcp
++ address=127.0.0.1:50223
++ curl -i --retry 5 --retry-connrefused --retry-delay 1 --connect-timeout 3 --max-time 5 http://127.0.0.1:50223/healthz
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     3  100     3    0     0   1666      0 --:--:-- --:--:-- --:--:--  3000
+HTTP/1.1 200 OK
+Server: nginx/1.31.8
+Date: Mon, 09 Nov 2026 09:13:20 GMT
+Content-Type: application/octet-stream
+Content-Length: 3
+Connection: keep-alive
+Content-Type: text/plain
+
+ok
++ curl -fsS --connect-timeout 3 --max-time 5 http://127.0.0.1:50223/
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>codyssey mission1</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>개발 워크스테이션 구축</h1>
+  <p id="ver">v2 - 호스트에서 수정됨 (bind mount)</p>
+</body>
+</html>
++ docker logs --timestamps mission1-proof-20261109t091318z-53830-web
+2026-11-09T09:13:20.819007460Z /docker-entrypoint.sh: /docker-entrypoint.d/ is not empty, will attempt to perform configuration
+2026-11-09T09:13:20.819038918Z /docker-entrypoint.sh: Looking for shell scripts in /docker-entrypoint.d/
+2026-11-09T09:13:20.820655710Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+2026-11-09T09:13:20.825250793Z 10-listen-on-ipv6-by-default.sh: info: Getting the checksum of /etc/nginx/conf.d/default.conf
+2026-11-09T09:13:20.843056585Z 10-listen-on-ipv6-by-default.sh: info: /etc/nginx/conf.d/default.conf differs from the packaged version
+2026-11-09T09:13:20.843240210Z /docker-entrypoint.sh: Sourcing /docker-entrypoint.d/15-local-resolvers.envsh
+2026-11-09T09:13:20.843358418Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/20-envsubst-on-templates.sh
+2026-11-09T09:13:20.845262127Z /docker-entrypoint.sh: Launching /docker-entrypoint.d/30-tune-worker-processes.sh
+2026-11-09T09:13:20.846087710Z /docker-entrypoint.sh: Configuration complete; ready for start up
+2026-11-09T09:13:20.855910418Z 2026/11/09 09:13:20 [notice] 1#1: using the "epoll" event method
+2026-11-09T09:13:20.855957502Z 2026/11/09 09:13:20 [notice] 1#1: nginx/1.31.8
+2026-11-09T09:13:20.855959543Z 2026/11/09 09:13:20 [notice] 1#1: built by gcc 15.2.0 (Alpine 15.2.0) 
+2026-11-09T09:13:20.855960877Z 2026/11/09 09:13:20 [notice] 1#1: OS: Linux 7.0.12-linuxkit
+2026-11-09T09:13:20.855962127Z 2026/11/09 09:13:20 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2026-11-09T09:13:20.856586168Z 2026/11/09 09:13:20 [notice] 1#1: start worker processes
+2026-11-09T09:13:20.856669293Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 29
+2026-11-09T09:13:20.856773377Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 30
+2026-11-09T09:13:20.856853585Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 31
+2026-11-09T09:13:20.856906210Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 32
+2026-11-09T09:13:20.857004335Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 33
+2026-11-09T09:13:20.857062877Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 34
+2026-11-09T09:13:20.857193418Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 35
+2026-11-09T09:13:20.857226627Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 36
+2026-11-09T09:13:20.857393585Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 37
+2026-11-09T09:13:20.857753502Z 2026/11/09 09:13:20 [notice] 1#1: start worker process 38
+2026-11-09T09:13:20.882047919Z 172.17.0.1 - - [09/Nov/2026:09:13:20 +0000] "GET /healthz HTTP/1.1" 200 3 "-" "curl/8.7.1" "-"
+2026-11-09T09:13:20.892357502Z 172.17.0.1 - - [09/Nov/2026:09:13:20 +0000] "GET / HTTP/1.1" 200 280 "-" "curl/8.7.1" "-"
+
+--- end ---
+finished_at_utc: 2026-11-09T09:13:20Z
+exit_code: 0

@@ -1,0 +1,19 @@
+started_at_utc: 2026-11-09T09:13:21Z
+working_directory: /Users/ych/Documents/Codex/2026-11-08/file-users-ych-desktop-e1-84/work/mission1
+command: bash -c set\ -ex\;\ docker\ ps\ -a\ --filter\ \"label=mission1.proof=\$1\"\;\ docker\ images\ --filter\ \"reference=\$1:\*\"\;\ docker\ volume\ ls\ --filter\ \"label=mission1.proof=\$1\" _ mission1-proof-20261109t091318z-53830
+--- output (stdout + stderr) ---
++ docker ps -a --filter label=mission1.proof=mission1-proof-20261109t091318z-53830
+CONTAINER ID   IMAGE                                         COMMAND                  CREATED        STATUS                  PORTS                       NAMES
+e5fbf9326e4c   mission1-proof-20261109t091318z-53830:fresh   "/docker-entrypoint.…"   1 second ago   Up Less than a second   127.0.0.1:50223->8080/tcp   mission1-proof-20261109t091318z-53830-web
++ docker images --filter 'reference=mission1-proof-20261109t091318z-53830:*'
+IMAGE                                           ID             DISK USAGE   CONTENT SIZE   EXTRA
+mission1-proof-20261109t091318z-53830:cache     6418184da8f5       62.7MB             0B        
+mission1-proof-20261109t091318z-53830:fresh     f975cfd01196       62.7MB             0B   U    
+mission1-proof-20261109t091318z-53830:initial   6418184da8f5       62.7MB             0B        
++ docker volume ls --filter label=mission1.proof=mission1-proof-20261109t091318z-53830
+DRIVER    VOLUME NAME
+local     mission1-proof-20261109t091318z-53830-data
+
+--- end ---
+finished_at_utc: 2026-11-09T09:13:21Z
+exit_code: 0
