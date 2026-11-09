@@ -6,6 +6,10 @@
 
 실행한 명령과 출력은 모두 아래에 그대로 옮겼다.
 
+기존 실습 기록은 본문과 `docs/img/`에 있고, 이후 재점검에서 수집한 전체 텍스트는
+[로그 목록](docs/logs/README.md)에 구분해 두었다. 과거 기록에 없던 출력을
+당시 실행의 원본인 것처럼 추가하지 않았다.
+
 ## 1. 실행 환경
 
 ```
@@ -63,6 +67,8 @@ mission1/
 │   ├── index.html
 │   └── style.css
 ├── docs/img/             증거 스크린샷
+├── docs/logs/            날짜·명령·종료 코드를 포함한 전체 텍스트 로그
+├── scripts/             로그 수집 스크립트
 └── README.md
 ```
 
@@ -78,6 +84,11 @@ mission1/
 | `vscode-source-control.png` | VSCode 소스 제어 패널과 원격 연결 상태 |
 
 실습용 임시 파일은 레포에 넣지 않았다. 터미널·권한 실습은 `~/codyssey/practice`에서 따로 했다.
+
+경로는 역할별로 나눴다. 배포할 정적 파일은 `site/`, 서버 설정은 `nginx/`,
+검증 자료는 `docs/`에 둔다. 컨테이너 내부 경로는 베이스 nginx 이미지가 쓰는
+`/usr/share/nginx/html`과 `/etc/nginx/conf.d`를 따르고, 변경되는 실습 데이터는
+이미지의 정적 파일과 섞지 않고 별도 볼륨의 `/data`에 둔다.
 
 ## 4. 터미널 조작
 
@@ -174,6 +185,10 @@ $ pwd
 
 ### 파일
 
+
+`444`는 일반 사용자 계정에서 소유자까지 쓰기를 막아 읽기 전용 동작을 확인하려는 설정이다.
+`644`는 소유자의 쓰기만 복원하고 그룹·기타 사용자는 읽기만 허용한다.
+관리자 권한이나 ACL 같은 별도 조건은 이 실습의 비교 대상에서 제외했다.
 ```
 $ touch report.txt
 $ ls -l report.txt
@@ -194,6 +209,9 @@ $ cat report.txt
 
 ### 디렉터리
 
+
+`644`로 바꾼 목적은 디렉터리의 진입·내부 파일 접근에 필요한 `x`를 빼 보는 것이다.
+`755`로 복원하면 모두 진입·조회할 수 있지만 생성·삭제에 필요한 쓰기는 소유자만 갖는다.
 ```
 $ mkdir -p secret
 $ echo "inside" > secret/note.txt
@@ -234,6 +252,10 @@ inside
 디렉터리에서 x는 그 안으로 들어가고 내부 파일에 접근할 수 있는 권한이다.
 위에서 `secret`을 755에서 644로 바꾸자 x가 빠지면서 `cd`와 `cat`이 모두 거부된 것이 그 근거다.
 디렉터리의 r은 이름 목록을 볼 수 있는 권한이라 x 없이 r만 있으면 이름은 보이지만 열 수는 없다.
+
+특수 비트는 별도 개념이다. sticky bit는 공유 디렉터리에서 다른 소유자의 파일
+삭제를 제한하고, setuid는 실행 파일이 파일 소유자의 유효 사용자 ID로 실행되게 한다.
+이번에는 일반 `rwx` 권한만 변경했으며 특수 비트를 설정한 실습은 하지 않았다.
 
 ## 6. Docker 설치 및 점검
 
@@ -543,7 +565,9 @@ ExposedPorts에 80과 8080이 둘 다 있다. EXPOSE는 베이스 값에 더해�
 
 **빌드** 단계에서 만들어지는 것이 이미지다. `docker build`는 Dockerfile의 지시어를 하나씩
 실행해 읽기 전용 레이어를 쌓고, 그 묶음에 `codyssey-web:1.0`이라는 이름을 붙인다.
-위 빌드 로그의 `[1/3]`, `[2/3]`, `[3/3]`이 각각 한 레이어씩 만들어진 지점이다.
+위 빌드 로그의 `[1/3]`, `[2/3]`, `[3/3]`은 빌드 단계 표시다.
+단계 하나와 파일 시스템 레이어 하나가 항상 대응하는 것은 아니다.
+예를 들어 `ENV`, `EXPOSE`, `LABEL`은 이미지 설정 메타데이터를 바꾼다.
 이미지는 한 번 만들어지면 내용이 바뀌지 않는다.
 
 **실행** 단계에서 만들어지는 것이 컨테이너다. `docker run`은 이미지의 읽기 전용 레이어 위에
@@ -565,6 +589,19 @@ vol-b에서 읽을 수 있었다.
 베이스 이미지에 보안 패치가 올라와 `nginx:alpine`을 다시 받아야 하는 경우가 그렇다.
 반대로 실행 중인 동작만 바꾸는 것(포트를 다르게 띄우거나 마운트를 붙이는 것)은
 `docker run` 옵션으로 해결되므로 재빌드가 필요 없다.
+
+캐시 영향을 구분하려면 아래처럼 서로 다른 태그로 빌드하고 전체 출력을 남긴다.
+아래는 재실행용 명령이며, 이 문서에 성공 로그가 첨부된 실험은 아니다.
+
+```bash
+bash scripts/capture-log.sh build-cache docker build --progress=plain -t codyssey-web:cache-check .
+bash scripts/capture-log.sh build-no-cache docker build --no-cache --progress=plain -t codyssey-web:fresh-check .
+```
+
+`--no-cache`는 빌드 캐시를 사용하지 않는 옵션이며 베이스 이미지 최신화와는 다르다.
+베이스도 새로 확인하려면 `--pull`을 추가한다
+([Docker 빌드 지침](https://docs.docker.com/build/building/best-practices/)).
+새 이미지를 빌드해도 이미 실행 중인 컨테이너는 바뀌지 않으므로 새 이미지로 다시 생성해야 한다.
 
 ## 9. 포트 매핑
 
@@ -636,7 +673,10 @@ $ curl -s --max-time 5 http://localhost:8081 | tail -5
 컨테이너 안의 8080과 호스트의 8080은 서로 다른 주소 공간이라, 매핑 없이는 호스트에서 닿을 수 없다.
 `-p 호스트포트:컨테이너포트`가 이 둘을 연결한다.
 기본 네트워크 모드인 bridge가 이렇게 별도 네임스페이스를 쓰기 때문에 매핑이 필요하고,
-host 모드로 띄우면 호스트의 네트워크를 그대로 쓰므로 `-p` 없이 닿는 대신 포트가 겹칠 수 있다.
+Linux의 host 모드는 호스트 네트워크를 공유하며 `-p`는 무시되고 포트가 겹칠 수 있다.
+Docker Desktop의 host networking은 4.34 이상에서 별도로 켜는 선택 기능이라
+macOS에서 `--network host`만 주면 Linux와 똑같이 된다고 가정하면 안 된다
+([Docker host 네트워크](https://docs.docker.com/engine/network/drivers/host/)).
 접속이 안 될 때는 `docker port <컨테이너>`로 매핑을 보고,
 `docker exec <컨테이너> nginx -T | grep listen`으로 애플리케이션이 실제로 듣는 포트를 확인하면
 어느 쪽이 어긋났는지 가려낼 수 있다. 아래 트러블슈팅 3이 그 사례다.
@@ -794,6 +834,18 @@ $ docker volume inspect codyssey-data
 호스트에서 직접 열기 어렵다. 그래서 임시 컨테이너에 볼륨과 호스트 디렉터리를 같이 붙이고
 그 안에서 tar로 묶어 꺼내는 방식을 썼다.
 
+`docker volume inspect`의 `Mountpoint`는 데몬이 관리하는 경로다. macOS 호스트에서
+그 `_data` 경로를 직접 수정하기보다 볼륨을 읽기 전용으로 연결해 내용을 확인한다.
+기존 볼륨이 있는지 먼저 검사해야 오타 때문에 빈 볼륨을 새로 만드는 일을 피할 수 있다.
+
+```bash
+docker volume inspect codyssey-data &&
+  bash scripts/capture-log.sh volume-files docker run --rm \
+    -v codyssey-data:/data:ro ubuntu:24.04 sh -c 'ls -la /data; cat /data/hello.txt'
+```
+
+이는 VM 밖에서 볼륨 내부를 확인하는 방법이며, 아직 새 실행 로그를 첨부한 상태는 아니다.
+
 백업.
 
 ```
@@ -862,6 +914,11 @@ persisted at Sat Oct 24 01:46:58 UTC 2026
 바인드 마운트 쪽은 호스트 디렉터리를 그대로 쓰므로 평소 쓰던 방법으로 백업하면 되고,
 이런 별도 절차가 필요하지 않다.
 
+실습 데이터는 변경 직후 수동 백업하고, 계속 쓰는 데이터라면 하루 한 번 등
+변경 빈도에 맞춰 주기를 정한다. 같은 파일명에 계속 덮어쓰기보다 날짜별로 남기고,
+주기적으로 다른 볼륨에 복원해 읽히는지 확인한다. DB처럼 실행 중 계속 쓰는 데이터는
+일관성 확보 없이 tar로 복사하지 않고 서비스 중지나 DB 전용 백업을 사용해야 한다.
+
 ## 12. Git과 GitHub
 
 ### Git 설정
@@ -922,6 +979,9 @@ d3bfba6 nginx 설정 교체한 Dockerfile 작성
 
 ### GitHub 연동
 
+
+원격의 최신 커밋은 [GitHub 커밋 목록](https://github.com/Yooch2/mission1/commits/main/)에서
+본문의 해시와 직접 비교할 수 있다. 아래 스크린샷과 로그는 촬영·실행 당시의 기록이다.
 VSCode 계정 메뉴에서 GitHub 로그인 상태를 확인했다.
 
 ![VSCode GitHub 로그인](docs/img/vscode-github-login.png)
@@ -1079,6 +1139,9 @@ web-a가 점유 중이었다.
 출력의 PID를 보고 `kill <PID>`로 종료할 수 있는데, 어떤 프로세스인지 확인하지 않고 끄면
 다른 작업을 중단시킬 수 있으므로 이번에는 호스트 포트를 바꾸는 쪽을 택했다.
 
+직접 실행한 서비스라면 해당 터미널의 Ctrl+C나 서비스 관리 도구로 종료한다.
+시스템 서비스나 다른 작업의 프로세스라면 강제로 끄지 말고 호스트 포트를 바꾼다.
+
 해결: 호스트 포트만 8081로 바꾸고 컨테이너 포트는 8080 그대로 두어 실행했다.
 실패한 컨테이너가 생성된 채로 남으므로 `docker rm web-b`를 먼저 해야 한다.
 
@@ -1101,12 +1164,12 @@ rmdir: archive: Directory not empty
 ## 14. 재현 방법
 
 ```
-git clone <저장소 URL>
+git clone https://github.com/Yooch2/mission1.git
 cd mission1
 docker build -t codyssey-web:1.0 .
 docker run -d -p 8080:8080 --name web-a codyssey-web:1.0
-curl http://localhost:8080
-curl http://localhost:8080/healthz
+curl -i --connect-timeout 3 --max-time 5 http://localhost:8080
+curl --connect-timeout 3 --max-time 5 http://localhost:8080/healthz
 ```
 
 바인드 마운트까지 확인하려면 다음을 추가로 실행한다.
@@ -1115,7 +1178,7 @@ curl http://localhost:8080/healthz
 ```
 docker run -d -p 8082:8080 --name web-bind \
   -v "$(pwd)/site:/usr/share/nginx/html:ro" codyssey-web:1.0
-curl -s http://localhost:8082 | grep ver
+curl -fsS --connect-timeout 3 --max-time 5 http://localhost:8082 | grep ver
 ```
 
 `site/index.html`을 수정하고 다시 curl하면 재빌드 없이 바뀐 내용이 나온다.
@@ -1125,6 +1188,58 @@ curl -s http://localhost:8082 | grep ver
 Linux는 `/home/사용자명/codyssey/mission1/site`,
 Windows PowerShell은 `C:\Users\사용자명\codyssey\mission1\site` 형태가 된다.
 오른쪽 값(`/usr/share/nginx/html`)은 컨테이너 안 경로라 어느 환경에서나 같다.
+
+위 명령은 bash/zsh 기준이다. PowerShell에서는 `curl.exe`를 사용하고,
+바인드 마운트의 호스트 쪽은 현재 폴더의 실제 Windows 절대경로를 지정한다.
+
+### 접속되지 않을 때 확인 순서
+
+```bash
+docker info
+docker ps -a --filter name=web-a
+docker port web-a
+docker logs --timestamps web-a
+docker exec web-a nginx -T
+curl -i --connect-timeout 3 --max-time 5 http://127.0.0.1:8080/healthz
+```
+
+1. 데몬 연결, 컨테이너 실행 상태, 호스트→컨테이너 포트 매핑을 순서대로 본다.
+2. `nginx -T`의 `listen 8080`과 매핑의 오른쪽 포트가 같은지 확인한다.
+3. macOS에서는 `lsof -nP -iTCP:8080 -sTCP:LISTEN`, Linux에서는 `ss -ltnp`로
+   점유자를 본다. Windows PowerShell은 `Get-NetTCPConnection -LocalPort 8080`을 쓸 수 있다.
+4. 로컬 `127.0.0.1`은 되지만 다른 PC에서 안 되면 게시 주소, 호스트 방화벽,
+   같은 네트워크인지부터 본다. Docker Desktop은 VM의 네트워크를 경유하므로
+   `172.x` 컨테이너 주소에 직접 접속하는 것과 호스트의 게시 포트는 다르다.
+
+이 저장소의 브라우저·curl 증빙은 **같은 Mac의 localhost 접속**이다.
+다른 PC나 인터넷에서 접속되는지까지 확인한 결과는 아니다.
+
+### 전체 출력 보관
+
+```bash
+bash scripts/capture-log.sh docker-info docker info
+bash scripts/capture-log.sh hello-world docker run --rm hello-world
+bash scripts/capture-log.sh web-logs docker logs --timestamps web-a
+```
+
+출력은 `docs/logs/`에 명령, 작업 위치, UTC 시작·종료 시각, stdout/stderr, 종료 코드와
+함께 저장된다. 같은 이름으로 반복해도 파일을 덮어쓰지 않는다. 실패한 명령은
+실패 종료 코드를 그대로 반환한다. 명령이 끝난 뒤 전체 출력과 파일 경로가 화면에 나온다.
+`hello-world` 이미지가 이미 있으면 풀링 로그가 나오지 않는 것이 정상이다.
+로그를 만들기 위해 기존 이미지를 일부러 지우지는 않는다.
+
+이미지·컨테이너 정리 전후를 남기려면 다음 읽기 전용 명령을 각각 기록하고,
+삭제는 자신이 만든 대상 이름을 확인한 뒤 그 사이에 직접 실행한다.
+
+```bash
+bash scripts/capture-log.sh containers-before docker ps -a
+bash scripts/capture-log.sh images-before docker images
+# 자신이 만든 실습용 대상만 docker rm / docker image rm으로 정리
+bash scripts/capture-log.sh containers-after docker ps -a
+bash scripts/capture-log.sh images-after docker images
+```
+
+현재 보관된 파일과 미수집 항목은 [로그 목록](docs/logs/README.md)에 적었다.
 
 확인이 끝나면 정리한다.
 
